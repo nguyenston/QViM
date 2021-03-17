@@ -1,5 +1,7 @@
 module VirtualMachine
 
+export QVM, showstate, step!, execute!
+
 using ..Utils
 using ..QuantInstr
 
@@ -50,8 +52,8 @@ The Quantum Virtual Machine,
 	a Turing machine that holds the instruction set
 	as well as the current state of the wave function
 """
-struct QVM{R <: Real}
-	# Stacks, each element is a stack frame
+struct QVM	
+    # Stacks, each element is a stack frame
 	stack::Vector{QIS}
 	pc_stack::Vector{Int}
 	
@@ -59,15 +61,15 @@ struct QVM{R <: Real}
 	reg::Vector{Bool}
 	
 	# Wavefunction
-	wfn::Vector{Complex{R}}
+	wfn::Vector{Complex{Float64}}
 	 
 	# A dictionary of primitive operations
 	dict::Dict{Symbol, Function}
 	
-	function QVM{R}(qis::Vector{QInstr}, nbit::Int; 
-			dict=GATES, nreg=32 ) where R <: Real
+	function QVM(qis::Vector{QInstr}, nbit::Int; 
+                    dict=GATES, nreg=32 )
 		
-		wfn = zeros(Complex{R}, 2^nbit)
+		wfn = zeros(Complex{Float64}, 2^nbit)
 		wfn[1] = 1
 		
 		registers = zeros(Int, nreg)
@@ -220,6 +222,20 @@ function step!(vm::QVM)
 	end
 		
 	true
+end
+
+"""
+Run step!(vm) until pc reaches the end of the program strip
+"""
+function execute!(vm::QVM; verbose::Bool=false, io::IO=stdout)
+    if verbose 
+        showstate(vm, io=io) 
+    end
+    while step!(vm)
+        if verbose 
+            showstate(vm, io=io) 
+        end
+    end
 end
 	
 end
