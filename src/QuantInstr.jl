@@ -2,7 +2,7 @@ module QuantInstr
 
 using ..Utils
 
-export @qis, QInstr
+export @quip, QInstr
 
 """
 Quantum Instruction each gate represents an operation on the state of the wave function
@@ -194,7 +194,7 @@ end
 Usage:
 @quip <quip expression>
 """
-macro qis(expr)
+macro quip(expr)
 	if expr.head == :(=)
 		lhs = expr.args[1]
 		rhs = expr.args[2]
