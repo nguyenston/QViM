@@ -8,8 +8,7 @@ Similarly, the virtual machine class `QVM` is essentially a turing machine with 
 a list of `QInstr` (named Quantum Program or QuIP) and execute on it procedually.
 
 ```julia
-using QViM.QuantInstr
-using QViM.VirtualMachine
+using QViM
 
 # Creating a instruction strip
 program = @quip [
