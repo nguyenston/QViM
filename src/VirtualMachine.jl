@@ -43,7 +43,7 @@ const GATES = Dict(:I => () -> [1 0;
 
 
 # Type aliases
-const QuIT = Vector{QInstr}
+const QIS = Vector{QInstr}
 
 """
 The Quantum Virtual Machine, 
@@ -52,7 +52,7 @@ The Quantum Virtual Machine,
 """
 struct QVM{R <: Real}
 	# Stacks, each element is a stack frame
-	stack::Vector{QuIT}
+	stack::Vector{QIS}
 	pc_stack::Vector{Int}
 	
 	# Classical memory
@@ -64,14 +64,14 @@ struct QVM{R <: Real}
 	# A dictionary of primitive operations
 	dict::Dict{Symbol, Function}
 	
-	function QVM{R}(quit::Vector{QInstr}, nbit::Int; 
+	function QVM{R}(qis::Vector{QInstr}, nbit::Int; 
 			dict=GATES, nreg=32 ) where R <: Real
 		
 		wfn = zeros(Complex{R}, 2^nbit)
 		wfn[1] = 1
 		
 		registers = zeros(Int, nreg)
-		new([quit], [1], registers, wfn, dict)
+		new([qis], [1], registers, wfn, dict)
 	end
 end
 
@@ -132,13 +132,13 @@ end
 
 function step!(vm::QVM)
 	dict = vm.dict
-	quit = vm.stack[end]
+	qis = vm.stack[end]
 	pc = vm.pc_stack[end]
 	
 	################################################
 	# PC reached the end of the current stack frame
 	#
-	if pc > length(quit)
+	if pc > length(qis)
 		# VM reached the end of program do nothing
 		if length(vm.stack) == 1
 			return false
@@ -151,7 +151,7 @@ function step!(vm::QVM)
 		return true
 	end
 
-	instr = quit[pc]
+	instr = qis[pc]
 	op = instr.op
 	func = instr.func
 	param = instr.param
@@ -164,8 +164,8 @@ function step!(vm::QVM)
 	# Function call push new stack frame
 	#
 	if op == :funcall
-		new_quit = func(param...)
-		push!(vm.stack, new_quit)
+		new_qis = func(param...)
+		push!(vm.stack, new_qis)
 		push!(vm.pc_stack, 1)
 	
 	##########################################################
