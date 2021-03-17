@@ -2,7 +2,7 @@ module QuantInstr
 
 using ..Utils
 
-export @quip, QInstr
+export @quit, QInstr
 
 """
 Quantum Instruction each gate represents an operation on the state of the wave function
@@ -21,7 +21,7 @@ struct QInstr
 	cbit_ctrl::Bool        # True means the control bits are classical 
 end
 
-# # Show interface for gate
+# Show interface for gate
 function Base.show(io::IO, g::QInstr)
 	op = g.op
 	param = g.param
@@ -194,7 +194,7 @@ end
 Usage:
 @quip <quip expression>
 """
-macro quip(expr)
+macro quit(expr)
 	if expr.head == :(=)
 		lhs = expr.args[1]
 		rhs = expr.args[2]
