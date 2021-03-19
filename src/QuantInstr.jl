@@ -114,20 +114,20 @@ function parse_entry(entry::Expr)
         parsed = [parse_entry(e) for e in entry.args]
         return Expr(:vcat, parsed...)
 
-        ##############################################
-        # List comprehension expression:
-        # 	[sub_expr for_expr if_expr]
+    ##############################################
+    # List comprehension expression:
+    # 	[sub_expr for_expr if_expr]
     elseif entry.head == :comprehension
         generator = entry.args[1]
         generator.args[1] = parse_entry(generator.args[1])
         generator.args[2] = esc(generator.args[2])
         return Expr(:comprehension, generator)
 
-        ###############################
-        # QInstr expression 
-        # 	+ Measure mode
-        #	+ Standard gate mode
-        #	+ Function call mode
+    ###############################
+    # QInstr expression 
+    # 	+ Measure mode
+    #	+ Standard gate mode
+    #	+ Function call mode
     elseif entry.head == :call
         control = []
         classical = []
@@ -164,7 +164,7 @@ function parse_entry(entry::Expr)
                 control_expr = [(mult, parse_cbit(expr)) 
                                 for (mult, expr) in control_expr]
 
-                # qbit mode
+            # qbit mode
             else
                 # sanity check
                 for expr in control_expr
@@ -202,12 +202,17 @@ function parse_entry(entry::Expr)
         func = esc(op_and_param[1])
 
         return :(QInstr($op, $func, $param, [], $control, $cbit_ctrl))
-        # Branch expression a ? b : c
+
+    # Branch expression a ? b : c
     elseif entry.head == :if
         a = entry.args[1]
         b = entry.args[2]
         c = entry.args[3]
         return Expr(:if, esc(a), parse_entry(b), parse_entry(c))
+
+    # Dot expression a.b
+	elseif entry.head == :(.)
+		return entry
     end
 
     throw("can't parse $entry")
