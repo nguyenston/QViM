@@ -38,9 +38,17 @@ In the case of multiple target or control qBits, use comma separated tuples.
 @quip [F >> (a1, a2) | (b1, b2)]
 ```
 
-<img src="https://github.com/npnguyen99/QViM/blob/main/assets/Multibit_QInstr.png?raw=true" height=300>
+<img src="https://github.com/npnguyen99/QViM/blob/main/assets/Multibit_QInstr.png?raw=true" height=350>
 
-### 2.2. Function call
+### 2.2. Control on zero
+Putting the `!` operator in front of a control bit to indicate control on zero on that bit
+```julia
+@quip [ H >> 1 | !2 ]
+```
+
+<img src="https://github.com/npnguyen99/QViM/blob/main/assets/Ctrl_on_zero.png?raw=true" height=150>
+
+### 2.3. Function call
 In cases where a pattern are repeatedly used, a function call that returns a QuIP can be used as an expression.
 ```Julia
 subroutine(a, b, c) = @quip [
@@ -58,10 +66,10 @@ routine = @quip [
 
 <img src="https://github.com/npnguyen99/QViM/blob/main/assets/Subroutine.png?raw=true" height=300>
 
-### 2.3. Measurements and classical bits
-The virtual machine has a set of registers (can be customized) that stores classical bits (cBit). Access to these registers can be done using the syntax `C[index]`. cBits can be used as control bits to gate application. 
+### 2.4. Measurements and classical bits
+The virtual machine has a set of registers (can be customized) that stores classical bits (cBit). Access to these registers can be done using the syntax `C[index]`. cBits can be used as and act like control bits in gate application. 
 ```julia
- @quip [ H >> 1 | (C[2], c[3]) ]
+ @quip [ H >> 1 | (C[2], C[3]) ]
  ```
 
 <img src="https://github.com/npnguyen99/QViM/blob/main/assets/cBit_Ctrl.png?raw=true" height=150>
