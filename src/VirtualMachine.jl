@@ -4,6 +4,7 @@ export QVM, showstate, step!, execute!
 
 using ..Utils
 using ..QuantInstr
+using LinearAlgebra
 
 ⊗(x, y) = kron(x, y)
 
