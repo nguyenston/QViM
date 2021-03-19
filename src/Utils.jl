@@ -52,6 +52,10 @@ Base.size(iter::MapView) = size(iter.indices)
 # Show interface for MapView
 Base.show(io::IO, x::MapView) = Base.show(io, collect(x))
 
+
+
+
+
 """
 Generates a mapping that moves qBit k in N qBits to the top
 To be used internally by multibubble
@@ -59,23 +63,27 @@ O(2^N) complexity
 """
 function bubble(k::Int, N::Int)
 	index_list = collect(1:2^N)
-	part_size = 2^(N - k)
+	part_size = 2^(N - abs(k))
 	partitions = collect(Iterators.partition(index_list, part_size))
-	
 	
 	odds  = 1:2:length(partitions)
 	evens = 2:2:length(partitions)
 	
-	part_map = collect(Iterators.flatten((odds, evens)))
+	if k > 0
+		part_map = collect(Iterators.flatten((odds, evens)))
+	# if k < 0 generate a map correspond to the qBit in question being NOT'ed
+	else
+		part_map = collect(Iterators.flatten((evens, odds)))
+	end
 	
 	mapped_parts = MapView(part_map, partitions)
-	
 	collect(Iterators.flatten(mapped_parts))
 end
 
 """
 Generates a mapping such that the qbits in ks are at the top of N qBits
 With the top to bottom ordering corresponds to begin to end of ks
+Negative k indicate control-on-zero
 Example:
 	Let there be 5 qBit lines in order: 
 		ψ₁ ψ₂ ψ₃ ψ₄ ψ₅
@@ -85,13 +93,16 @@ Example:
 Complexity: O(n * 2^N + n^2)
 where:
  		N is the number of qBits
-      n is the number of qBits to be bubbled
+      	n is the number of qBits to be bubbled
 """
 function multibubble(ks::Vector{Int}, N::Int)
 	final_map = collect(1:2^N)
 	
 	push_down_list = []
 	for k in reverse(ks)
+		# separate sign from value
+		(sign, k) = (div(k, abs(k)), abs(k))
+		
 		push_down = 0
 		for i in push_down_list
 			if k < i
@@ -102,10 +113,10 @@ function multibubble(ks::Vector{Int}, N::Int)
 		end
 		push!(push_down_list, k)
 			
-		map = bubble(k + push_down, N)
+		map = bubble(sign * (k + push_down), N)
 		final_map = collect(MapView(map, final_map))
 	end
-		
+	
 	final_map
 end
 

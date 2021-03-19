@@ -208,11 +208,11 @@ function step!(vm::QVM)
         end
 
         # cBit control
-        if cbit_ctrl
-            conds = [vm.reg[i] for i in control]
-            if reduce((a, b) -> a && b, conds)
-                applygate!(vm.wfn, operator(param...), target)
-            end
+		if cbit_ctrl
+			conds = [vm.reg[abs(i)] ⊻ (i < 0) for i in control]
+			if reduce((a, b) -> a && b, conds)
+				applygate!(vm.wfn, operator(param...), target)
+			end
 
             # qBit control
         else

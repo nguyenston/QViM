@@ -81,17 +81,24 @@ Below is a use case of MapView, at the same time showcasing a more efficient way
 
 # ╔═╡ ffd7b6b0-7ef0-11eb-2bdd-67ef92238d66
 # Generates a mapping that moves qBit k in N qBits to the top
+# If k is negative, treat k as NOT'ed
 # O(2^N) complexity
 function bubble(k::Int, N::Int)
 	index_list = collect(1:2^N)
-	part_size = 2^(N - k)
+	part_size = 2^(N - abs(k))
 	partitions = collect(Iterators.partition(index_list, part_size))
 	
 	
 	odds  = 1:2:length(partitions)
 	evens = 2:2:length(partitions)
 	
-	part_map = collect(Iterators.flatten((odds, evens)))
+	
+	if k > 0
+		part_map = collect(Iterators.flatten((odds, evens)))
+	# if k < 0 generate a map correspond to the qBit in question being NOT'ed
+	else
+		part_map = collect(Iterators.flatten((evens, odds)))
+	end
 	
 	mapped_parts = MapView(part_map, partitions)
 	
@@ -117,6 +124,9 @@ function multibubble(ks::Vector{Int}, N::Int)
 	
 	push_down_list = []
 	for k in reverse(ks)
+		# separate sign from value
+		(sign, k) = (div(k, abs(k)), abs(k))
+		
 		push_down = 0
 		for i in push_down_list
 			if k < i
@@ -127,10 +137,10 @@ function multibubble(ks::Vector{Int}, N::Int)
 		end
 		push!(push_down_list, k)
 			
-		map = bubble(k + push_down, N)
+		map = bubble(sign * (k + push_down), N)
 		final_map = collect(MapView(map, final_map))
 	end
-		
+	
 	final_map
 end
 
@@ -296,12 +306,14 @@ struct QInstr
 	# In measurement mode, specify [target qbit, target cbit]
 	target::Vector{Int}    
 	
-	control::Vector{Int}   # specify control bits
+	# specify control bits
+	# negative value indicates control-on-zero
+	control::Vector{Int}   
 	cbit_ctrl::Bool        # True means the control bits are classical 
 end
 
 # ╔═╡ 43811d70-813f-11eb-3614-1315573f2d76
-# # Show interface for gate
+# Show interface for gate
 function Base.show(io::IO, g::QInstr)
 	op = g.op
 	param = g.param
@@ -325,7 +337,7 @@ function Base.show(io::IO, g::QInstr)
 		ctrl_expr = g.cbit_ctrl ? [Expr(:ref, :C, i) for i in g.control] : g.control
 		control = length(ctrl_expr) == 1 ? ctrl_expr[1] : tuple(ctrl_expr...)
 
-		if isempty(control)
+		if isempty(ctrl_expr)
 			show(io, "$op_param >> $target")
 		else
 			show(io, "$op_param >> $target | $control")
@@ -369,11 +381,24 @@ begin
 	function parse_cbit(expr::Expr)
 		@assert expr.head == :ref "Not a classical bit: $expr"
 		@assert expr.args[1] == :C "Bits can only take the form C[i]"
-		return expr.args[2]
+		expr.args[2]
 	end
 	
-	parse_cbit(other) = 
-		throw("Not a classical bit: $other")
+	parse_cbit(other) = throw("Not a classical bit: $other")
+end
+
+# ╔═╡ 44603d30-886e-11eb-1313-4d8adc9702da
+# Parsing "not" expressions: !Expr
+begin
+	function parse_not(expr::Expr)
+		if expr.head == :call && expr.args[1] == :!
+			(-1, expr.args[2])
+		else
+			(1, expr)
+		end
+	end
+	
+	parse_not(other) = (1, other)
 end
 
 # ╔═╡ d89eb340-8153-11eb-1341-6518040a962d
@@ -422,29 +447,43 @@ begin
 			if entry.args[1] == :| # Parsing control
 				control_expr = force_tuple(entry.args[3]).args
 				
+				# Parsing NOT'ed expressions
+				control_expr = parse_not.(control_expr)
+				
 				# Check for classical control mode
-				if typeof(control_expr[1]) == Expr
-					cbit_ctrl = control_expr[1].head == :ref
+				if typeof(control_expr[1][2]) == Expr
+					cbit_ctrl = control_expr[1][2].head == :ref
 				end
 				
 				# Process control bit expressions depends on cbit_mode
 				if cbit_ctrl
-					control_expr = [parse_cbit(expr) for expr in control_expr]
+					# Parse cBit values
+					control_expr = [(mult, parse_cbit(expr)) 
+						for (mult, expr) in control_expr]
+					
+				# qbit mode
 				else
+					# sanity check
 					for expr in control_expr
 						if typeof(expr) == Expr
 							@assert expr.head != :ref "not a qBit $expr"
 						end
 					end
 				end
+				# Applying NOT'ed expressions
+				control_expr = [Expr(:call, :*, mult, expr)
+					for (mult, expr) in control_expr]
+				
 				control = esc(Expr(:vect, control_expr...))
 				entry = entry.args[2]
 			end
 			
 			@assert entry.head == :call "Invalid quip entry $entry"
 			if entry.args[1] == :>> # Parsing Operation
+				# Parse target
 				target = esc(Expr(:vect, force_tuple(entry.args[3]).args...))
 
+				# Parse op and param
 				op_and_param = force_params(entry.args[2]).args
 				op = Meta.quot(op_and_param[1])
 				param = esc(Expr(:vect, op_and_param[2:end]...))
@@ -685,7 +724,7 @@ function step!(vm::QVM)
 		
 		# cBit control
 		if cbit_ctrl
-			conds = [vm.reg[i] for i in control]
+			conds = [vm.reg[abs(i)] ⊻ (i < 0) for i in control]
 			if reduce((a, b) -> a && b, conds)
 				applygate!(vm.wfn, operator(param...), target)
 			end
@@ -717,15 +756,11 @@ end
 
 # ╔═╡ a59e1620-828e-11eb-2a19-15b99805ac4d
 with_terminal() do
-	N = 3
-	l = 1
+	N = 2
 	quip = @quip [
-		X >> 1     ;
-		X >> 3     ;
-		qft(N)
-		qft_swaps(N, 0);
-		qft(N)
-		qft_swaps(N, 0);
+		X >> 1            ;
+		1 => C[1]         ;
+		X >> 2 | !C[1]    ;
 	]
 	
 	for i in 1:1
@@ -738,9 +773,6 @@ with_terminal() do
 		end
 	end
 end
-
-# ╔═╡ 9601bca2-861a-11eb-0fd2-b90145530d19
-1 > 2 ? 1 : 2
 
 # ╔═╡ Cell order:
 # ╠═5bc68900-7ecf-11eb-0d3a-f7f997d8e14a
@@ -767,6 +799,7 @@ end
 # ╠═43811d70-813f-11eb-3614-1315573f2d76
 # ╠═d0eb8520-8143-11eb-1f1b-27c008fd716d
 # ╠═7f4adfc0-85aa-11eb-288e-fdf2569ed30b
+# ╠═44603d30-886e-11eb-1313-4d8adc9702da
 # ╠═d89eb340-8153-11eb-1341-6518040a962d
 # ╠═317c8920-813f-11eb-2048-f1ff2bafeab5
 # ╠═5a916b00-80a9-11eb-2cc6-93f42781e1b6
@@ -777,4 +810,3 @@ end
 # ╠═f593d63e-823b-11eb-2f6b-a91be5d313bf
 # ╠═ea7a2ed0-8600-11eb-2497-bb23e393d273
 # ╠═a59e1620-828e-11eb-2a19-15b99805ac4d
-# ╠═9601bca2-861a-11eb-0fd2-b90145530d19
