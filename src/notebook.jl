@@ -507,6 +507,10 @@ begin
 			b = entry.args[2]
 			c = entry.args[3]
 			return Expr(:if, esc(a), parse_entry(b), parse_entry(c))
+			
+		# Dot expression a.b
+		elseif entry.head == :(.)
+			return entry
 		end
 		
 		throw("can't parse $entry")
@@ -774,6 +778,9 @@ with_terminal() do
 	end
 end
 
+# ╔═╡ ae503700-88db-11eb-2c85-5574fe9aeca5
+ @quip [i == 3 ? H >> i : X >> i | (i + 1) for i in 1:3]
+
 # ╔═╡ Cell order:
 # ╠═5bc68900-7ecf-11eb-0d3a-f7f997d8e14a
 # ╠═f3cbdd70-836d-11eb-19d2-25a48489f506
@@ -810,3 +817,4 @@ end
 # ╠═f593d63e-823b-11eb-2f6b-a91be5d313bf
 # ╠═ea7a2ed0-8600-11eb-2497-bb23e393d273
 # ╠═a59e1620-828e-11eb-2a19-15b99805ac4d
+# ╠═ae503700-88db-11eb-2c85-5574fe9aeca5
