@@ -26,7 +26,7 @@ execute!(qvm)
 ## 2. QInstr syntax
 
 ### 2.1. Basic expression
-The expression below (reads _**apply `U` on `a` given `b`**_) represents the following circuit:
+The expression below (reads **apply `U` on `a` given `b`**) represents the following circuit:
 ```julia
 @quip [U >> a | b]
 ```
@@ -79,9 +79,39 @@ The virtual machine has a set of registers (can be customized) that stores class
  @quip [ H >> 1 | (2, C[2]) ] # illegal, will error
 ```
 
-A measurement will collapse a qBit to a definite state and write the result into a target cBit
+A measurement will collapse a qBit to a definite state and write the result into a target cBit.
 ```julia
 @quip [ 1 => C[2] ]
 ```
 
 <img src="https://github.com/npnguyen99/QViM/blob/main/assets/Measurement.png?raw=true" height=150>
+
+### 2.5. List comprehension, conditional expression, and nesting QuIPs
+Conveniently, the `@quip` macro can parse list comprehension expressions. Bellow is an example of its usage in combination with a conditional expression.
+```julia
+@quip [i == 3 ? 
+          H >> i : 
+          X >> i | (i + 1) 
+       for i in 1:3]
+```
+**Note:** When using non-atomic expressions like `i + 1` for qBits, surround them with parantheses `(i + 1)`.
+
+<img src="https://github.com/npnguyen99/QViM/blob/main/assets/List_Comp_example.png?raw=true" height=300>
+
+Since the `@quip` macro flattens the array expression, these example below are valid.
+```julia
+@quip [
+  X >> 1 ;
+  [
+    H >> 3 ;
+    X >> 3 ;
+  ];
+  Y >> 2 ;
+]
+
+@quip [
+  H >> 1 ;
+  [X >> (i + 1) | i for i in 1:3] ;
+  3 => C[1] ;
+]
+```
