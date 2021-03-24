@@ -1,6 +1,6 @@
 module QViM
 
-include("Utils.jl")
+include("Utils/Utils.jl")
 include("QuantInstr.jl")
 include("VirtualMachine.jl")
 

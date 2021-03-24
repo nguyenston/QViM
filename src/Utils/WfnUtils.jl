@@ -1,60 +1,9 @@
-module Utils
-
-export MapView, applygate!
+module WfnUtils
 
 using LinearAlgebra
+using ..MapViews
 
-"""
-MapView is similar to a regular Julia view. However, the data it accesses 
-is determined by an internal map. This allows for a reorganization 
-of the array in question. Used in cases where it is convenient to have 
-two different orderings of the same array at the same time.
-"""
-struct MapView{T, N} <: AbstractArray{T, N}
-    indices::Array{Int, N}
-    original::Array{T, N}
-end
-
-######################################
-# AbstractArray interfaces for MapView
-Base.IndexStyle(::Type{MapView}) = IndexLinear()
-Base.getindex(X::MapView, i::Int) = X.original[X.indices[i]]
-
-function Base.setindex!(X::MapView{T}, v::V, i::Int) where {T, V}
-    X.original[X.indices[i]] = v
-end
-
-Base.firstindex(X::MapView) = 1
-Base.lastindex(X::MapView) = length(X)
-
-######################################
-# Iterator interfaces for MapView
-function Base.iterate(iter::MapView)
-    if length(iter) == 0
-        nothing
-    else
-        iter[1], 1
-    end
-end
-
-function Base.iterate(iter::MapView, state)
-    if state >= length(iter)
-        nothing
-    else
-        iter[state + 1], state + 1
-    end
-end
-
-Base.eltype(::Type{MapView{T}}) where T = T
-Base.size(iter::MapView) = size(iter.indices)
-
-##############################
-# Show interface for MapView
-Base.show(io::IO, x::MapView) = Base.show(io, collect(x))
-
-
-
-
+export applygate!
 
 """
 Generates a mapping that moves qBit k in N qBits to the top
@@ -143,7 +92,7 @@ function applygate!(
 
     # Generate a mapping that bubbles all relevent qBits to the top
     # Since in controlled gates' operations,
-    # 	only the bottom right of the matrix (the Gate application) is non-trivial,
+    #   only the bottom right of the matrix (the Gate application) is non-trivial,
     #   only takes the end side of ψ that corresponds to the Gate 
     bubble_map = multibubble(top_qbit_list, N)
     gate_index = length(ψ) - size(Gate)[1] * partition_size + 1
