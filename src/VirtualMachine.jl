@@ -68,7 +68,7 @@ struct QVM
     dict::Dict{Symbol, Function}
 
     function QVM(quip::Vector{QInstr}, nbit::Int; 
-            dict=GATES, nreg=32 )
+            dict=GATES, nreg=32)
 
         wfn = zeros(Complex{Float64}, 2^nbit)
         wfn[1] = 1
