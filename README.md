@@ -115,3 +115,22 @@ Since the `@quip` macro flattens the array expression, these example below are v
   3 => C[1] ;
 ]
 ```
+## 3. The QVM object
+
+### 3.1. Constructor
+The constructor of the `QVM` object takes the form of:
+```julia
+QVM(quip::Vector{QInstr}, nbit::Int;  # required parameters
+            dict=GATES, nreg=32)      # optional keyword parameters
+```
+
+Where:
+* `quip` is the main program to be run
+* `nbit` is the number of qBits simulated
+* `dict` is the set of primitive operations that can be applied on the wave function
+* `nreg` is the number of classical registers
+
+### 3.2. Relevant functions
+* `showstate(vm::QVM, n=2; io::IO=stdout)`: pretty print the current state of `vm`, like stack frames and current instruction
+* `step!(vm::QVM)`: step through a single instruction
+* `execute!(vm::QVM; verbose::Bool=false, io::IO=stdout)`: step through all instructions to the end of the main program
