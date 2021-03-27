@@ -5,7 +5,7 @@ As the name suggests this package allows for the creation of simulated quantum m
 
 A quantum circuit can be thought of as a series of gate applications.
 Similarly, the virtual machine class `QVM` is essentially a turing machine with an internal state (wave function) that takes in
-a list of `QInstr` (named Quantum Program or QuIP) and execute on it procedually.
+a list of `QInstr` (QInstr Program or QuIP) and execute on it procedually.
 
 ```julia
 using QViM
