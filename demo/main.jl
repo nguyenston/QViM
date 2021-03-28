@@ -1,4 +1,4 @@
-include("QViM.jl")
+include("../src/QViM.jl")
 
 using .QViM
 using LinearAlgebra
